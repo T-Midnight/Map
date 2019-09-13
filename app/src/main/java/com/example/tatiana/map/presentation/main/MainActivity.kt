@@ -4,8 +4,8 @@ import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v7.app.AppCompatActivity
 import com.example.tatiana.map.App
+import com.example.tatiana.map.R
 import com.example.tatiana.map.presentation.map.MapFragment
-import com.example.tatiana.testapp.R
 import ru.agima.mobile.cicerone.CustomNavigator
 
 class MainActivity : AppCompatActivity() {
