@@ -15,6 +15,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import com.example.tatiana.map.App
 import com.example.tatiana.map.R
+import com.example.tatiana.map.data.Place
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.location.LocationServices
@@ -66,19 +67,17 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.OnConnection
 
         mGoogleApiClient = GoogleApiClient.Builder(App.context)
             .enableAutoManage(
-                this.activity!!/* FragmentActivity */,
-                this /* OnConnectionFailedListener */
+                this.activity!!,
+                this
             )
             .addConnectionCallbacks(this)
             .addApi(LocationServices.API)
-//        .addApi(GEO_DATA_API)
-//        .addApi(Places.PLACE_DETECTION_API)
             .build()
         mGoogleApiClient!!.connect()
     }
 
     private val clickListener = View.OnClickListener {
-        saveMyLocation()
+        rememberMyLocation()
     }
 
     private fun createMapView() {
@@ -155,10 +154,26 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.OnConnection
         }
     }
 
-    private fun saveMyLocation() {
-        var location = mLastKnownLocation
-        listLocations.add(location)
+    private fun rememberMyLocation() {
+        determineMyLocation()
+        saveMyLocation()
+        var results = ArrayList<Place>()
+        realm.executeTransaction { realm ->
+            results.addAll(
+                realm.copyFromRealm(
+                    realm
+                        .where(Place::class.java)
+                        .findAll()
+                )
+            )
+        }
 
+        //return results
+        Toast.makeText(App.context, "$results[0]", Toast.LENGTH_LONG).show()
+    }
+
+    fun determineMyLocation() {
+        var location = mLastKnownLocation
         val gCoder = Geocoder(App.context)
         val places = gCoder.getFromLocation(location!!.latitude, location!!.longitude, 1)
         if (places != null && places.size > 0) {
@@ -168,7 +183,29 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.OnConnection
                 Toast.LENGTH_SHORT
             ).show()
         }
-        listPlaces.add(places[0].getAddressLine(0))
+    }
+
+    var count: Int = 0
+    fun saveMyLocation() {
+        realm.executeTransaction { realm ->
+            realm.executeTransaction { realm ->
+                results.addAll(
+                    realm.copyFromRealm(
+                        realm
+                            .where(Place::class.java)
+                            .findAll()
+                    )
+                )
+            }
+
+            realm.createObject(Place::class.java, count).apply {
+                latitude = mLastKnownLocation!!.latitude
+                longitude = mLastKnownLocation!!.longitude
+                realm.insertOrUpdate(this)
+                count++
+            }
+        }
+
     }
 
     override fun onRequestPermissionsResult(
