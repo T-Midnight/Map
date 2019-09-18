@@ -15,7 +15,6 @@ import android.view.ViewGroup
 import android.widget.Toast
 import com.example.tatiana.map.App
 import com.example.tatiana.map.R
-import com.example.tatiana.map.data.Place
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.location.LocationServices
@@ -25,7 +24,7 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import io.realm.Realm
+import com.google.android.gms.maps.model.MarkerOptions
 import kotlinx.android.synthetic.main.fragment_map.*
 
 
@@ -37,17 +36,19 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.OnConnection
 
     private var mMap: GoogleMap? = null
     private val PERMISSION_ACCESS_LOCATION = 0
-    val realm by lazy {
-        Realm.getDefaultInstance()
-    }
     private var mLocationPermissionGranted = false
     private var mLastKnownLocation: Location? = null
     var mCameraPosition: CameraPosition? = null
     var mDefaultLocation: LatLng = LatLng((-34).toDouble(), 151.toDouble())
     var mGoogleApiClient: GoogleApiClient? = null
 
-    var listLocations = ArrayList<Location?>()
-    var listPlaces = ArrayList<String>()
+    var listLocations = ArrayList<LatLng?>()
+
+    // Add a thin red line from London to New York.
+//Polyline line = map.addPolyline(new PolylineOptions()
+//    .add(new LatLng(51.5, -0.1), new LatLng(40.7, -74.0))
+//    .width(5)
+//    .color(Color.RED));
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -60,10 +61,6 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.OnConnection
         super.onViewCreated(view, savedInstanceState)
 
         buttonSave.setOnClickListener(clickListener)
-
-        // Initialize the SDK
-//        Places.initialize(App.context, "@string/google_maps_key")
-//        val placesClient : PlacesClient = Places.createClient(App.context)
 
         mGoogleApiClient = GoogleApiClient.Builder(App.context)
             .enableAutoManage(
@@ -157,25 +154,13 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.OnConnection
     private fun rememberMyLocation() {
         determineMyLocation()
         saveMyLocation()
-        var results = ArrayList<Place>()
-        realm.executeTransaction { realm ->
-            results.addAll(
-                realm.copyFromRealm(
-                    realm
-                        .where(Place::class.java)
-                        .findAll()
-                )
-            )
-        }
-
-        //return results
-        Toast.makeText(App.context, "$results[0]", Toast.LENGTH_LONG).show()
     }
 
     fun determineMyLocation() {
-        var location = mLastKnownLocation
+        var currentLocation = mLastKnownLocation
         val gCoder = Geocoder(App.context)
-        val places = gCoder.getFromLocation(location!!.latitude, location!!.longitude, 1)
+        val places =
+            gCoder.getFromLocation(currentLocation!!.latitude, currentLocation!!.longitude, 1)
         if (places != null && places.size > 0) {
             Toast.makeText(
                 App.context,
@@ -185,27 +170,10 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.OnConnection
         }
     }
 
-    var count: Int = 0
     fun saveMyLocation() {
-        realm.executeTransaction { realm ->
-            realm.executeTransaction { realm ->
-                results.addAll(
-                    realm.copyFromRealm(
-                        realm
-                            .where(Place::class.java)
-                            .findAll()
-                    )
-                )
-            }
-
-            realm.createObject(Place::class.java, count).apply {
-                latitude = mLastKnownLocation!!.latitude
-                longitude = mLastKnownLocation!!.longitude
-                realm.insertOrUpdate(this)
-                count++
-            }
-        }
-
+        var latLng = LatLng(mLastKnownLocation!!.latitude, mLastKnownLocation!!.longitude)
+        mMap!!.addMarker(MarkerOptions().position(latLng).title("$latLng"))
+        listLocations.add(latLng)
     }
 
     override fun onRequestPermissionsResult(
@@ -217,6 +185,8 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.OnConnection
             PERMISSION_ACCESS_LOCATION -> {
                 if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
                     mLocationPermissionGranted = true
+                    updateLocationUI()
+                    getDeviceLocation()
                 } else {
                     Toast.makeText(App.context, "Your location disabled", Toast.LENGTH_SHORT).show()
                 }
