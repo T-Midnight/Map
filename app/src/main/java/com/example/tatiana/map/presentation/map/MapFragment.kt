@@ -2,7 +2,7 @@ package com.example.tatiana.map.presentation.map
 
 
 import android.content.pm.PackageManager
-import android.location.Geocoder
+import android.graphics.Color
 import android.location.Location
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
@@ -25,6 +25,7 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.PolylineOptions
 import kotlinx.android.synthetic.main.fragment_map.*
 
 
@@ -41,14 +42,8 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.OnConnection
     var mCameraPosition: CameraPosition? = null
     var mDefaultLocation: LatLng = LatLng((-34).toDouble(), 151.toDouble())
     var mGoogleApiClient: GoogleApiClient? = null
-
     var listLocations = ArrayList<LatLng?>()
 
-    // Add a thin red line from London to New York.
-//Polyline line = map.addPolyline(new PolylineOptions()
-//    .add(new LatLng(51.5, -0.1), new LatLng(40.7, -74.0))
-//    .width(5)
-//    .color(Color.RED));
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -60,7 +55,13 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.OnConnection
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        buttonSave.setOnClickListener(clickListener)
+        buttonSave.setOnClickListener {
+            rememberMyLocation()
+        }
+
+        buttonDraw.setOnClickListener {
+            drawLine()
+        }
 
         mGoogleApiClient = GoogleApiClient.Builder(App.context)
             .enableAutoManage(
@@ -71,10 +72,6 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.OnConnection
             .addApi(LocationServices.API)
             .build()
         mGoogleApiClient!!.connect()
-    }
-
-    private val clickListener = View.OnClickListener {
-        rememberMyLocation()
     }
 
     private fun createMapView() {
@@ -152,28 +149,22 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.OnConnection
     }
 
     private fun rememberMyLocation() {
-        determineMyLocation()
+        getDeviceLocation()
         saveMyLocation()
     }
 
-    fun determineMyLocation() {
-        var currentLocation = mLastKnownLocation
-        val gCoder = Geocoder(App.context)
-        val places =
-            gCoder.getFromLocation(currentLocation!!.latitude, currentLocation!!.longitude, 1)
-        if (places != null && places.size > 0) {
-            Toast.makeText(
-                App.context,
-                "country: " + places[0].getAddressLine(0),
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-    }
-
-    fun saveMyLocation() {
+    private fun saveMyLocation() {
         var latLng = LatLng(mLastKnownLocation!!.latitude, mLastKnownLocation!!.longitude)
         mMap!!.addMarker(MarkerOptions().position(latLng).title("$latLng"))
         listLocations.add(latLng)
+    }
+
+    private fun drawLine() {
+        mMap!!.addPolyline(
+            PolylineOptions().addAll(listLocations)
+                .width(4.toFloat())
+                .color(Color.GREEN)
+        )
     }
 
     override fun onRequestPermissionsResult(
