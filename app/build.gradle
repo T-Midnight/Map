@@ -2,14 +2,14 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
-apply plugin: 'realm-android'
 
 android {
     compileSdkVersion 28
     defaultConfig {
         applicationId "com.example.tatiana.testapp"
-        minSdkVersion 18
+        minSdkVersion 21
         targetSdkVersion 28
+        multiDexEnabled true
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -35,8 +35,9 @@ dependencies {
     implementation 'com.arello-mobile:moxy-app-compat:1.5.5'
     kapt 'com.arello-mobile:moxy-compiler:1.5.5'
     //google maps
-    implementation 'com.google.android.gms:play-services-maps:11.8.0'
-    //implementation 'com.google.android.gms:play-services:12.0.1'
+    implementation 'com.google.android.gms:play-services:12.0.1'
+    implementation 'com.google.android.gms:play-services-location:12.0.1'
     //cicerone
     implementation 'ru.terrakok.cicerone:cicerone:1.1'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
 }
